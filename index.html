@@ -130,18 +130,22 @@ if(location.protocol==='file:'||location.hostname.indexOf('github.io')>-1){
 
 /* ===== 히어로 ===== */
 .contents_div .gmw-hero{ background:var(--gmw-c-cream); }
+/* ===== 히어로 인트로 ===== */
 .contents_div .gmw-intro{ width:100%; }
 .contents_div .gmw-intro-stage{ position:relative; width:100%; overflow:hidden; background:#f1efe9; cursor:pointer; }
+/* 비율 고정: 1655 / 1600 */
 .contents_div .gmw-intro-stage::before{ content:''; display:block; padding-top:103.4375%; }
 .contents_div .gmw-intro-stage .gmw-intro-layer,
 .contents_div .gmw-intro-stage .gmw-intro-canvas{ position:absolute; left:0; top:0; width:100%; height:100%; max-width:none; margin:0; padding:0; border:0; display:block; }
 .contents_div .gmw-intro-stage .gmw-intro-layer{ object-fit:cover; }
 .contents_div .gmw-intro-stage .gmw-intro-text{ opacity:0; will-change:transform, opacity; }
 .contents_div .gmw-intro-stage .gmw-intro-layer.is-missing{ visibility:hidden; }
+/* 텍스트: 같은 이미지를 영역별로 잘라 따로 움직임 */
 .contents_div .gmw-intro-text--title{ -webkit-clip-path:inset(0 0 66% 0); clip-path:inset(0 0 66% 0); }
 .contents_div .gmw-intro-text--label1{ -webkit-clip-path:inset(48% 61.5% 44.5% 10.5%); clip-path:inset(48% 61.5% 44.5% 10.5%); }
 .contents_div .gmw-intro-text--label2{ -webkit-clip-path:inset(65% 9.5% 28% 57%); clip-path:inset(65% 9.5% 28% 57%); }
 .contents_div .gmw-intro-text--date{ -webkit-clip-path:inset(84% 5.5% 3% 43%); clip-path:inset(84% 5.5% 3% 43%); }
+/* 재생: 음식은 둥실, 텍스트는 제목 → 라벨 → 날짜 순으로 등장 */
 .contents_div .gmw-intro.is-playing .gmw-intro-canvas{ animation:gmw-intro-bob 2.6s steps(8) infinite; }
 .contents_div .gmw-intro.is-playing .gmw-intro-text--title{ animation:gmw-intro-drop .7s cubic-bezier(.2,1.4,.4,1) .15s both; }
 .contents_div .gmw-intro.is-playing .gmw-intro-text--label1{ animation:gmw-intro-from-left .5s cubic-bezier(.2,1.3,.4,1) .9s both, gmw-intro-sway-a 3s ease-in-out 1.4s infinite; }
@@ -464,12 +468,13 @@ if(location.protocol==='file:'||location.hostname.indexOf('github.io')>-1){
 </style>
 
 <div class="gmw-wrap">
-<!-- TEST: 히어로 진입 테스트용 빈 프레임 (테스트 후 삭제) -->
-<div class="jngj-test-spacer" style="height:1200px;background:#fffdef;" aria-hidden="true"></div>
-<!-- /TEST 뷰포트 진입 애니메이션 확인용, 확인 후 삭제 -->
 
+  <!-- TEST: 히어로 진입 테스트용 빈 프레임 (테스트 후 삭제) -->
+  <div class="jngj-test-spacer" style="height:1200px;background:#fffdef;" aria-hidden="true"></div>
+  <!-- /TEST 뷰포트 진입 애니메이션 확인용, 확인 후 삭제 -->
   <!-- 히어로 -->
   <header class="gmw-hero">
+    <!-- 인트로: 배경 → 음식(캔버스) → 텍스트 4조각 순으로 겹침 -->
     <div class="gmw-intro" role="img" aria-label="2026 광주미식주간, 산지에서 식탁까지, 전남광주통합특별시, 10월 2일부터 10월 11일">
       <div class="gmw-intro-stage">
         <img class="gmw-intro-layer gmw-intro-bg" src="img/히어로배경.webp" width="1600" height="1655" alt="" fetchpriority="high" loading="eager" decoding="async">
@@ -1023,10 +1028,14 @@ if(location.protocol==='file:'||location.hostname.indexOf('github.io')>-1){
     var ctx = canvas && canvas.getContext ? canvas.getContext('2d') : null;
     if (!stage || !ctx) { intro.classList.add('is-playing'); return; }
 
-    var FOOD_SRCS = ['img/히어로_1.webp', 'img/히어로_2.webp', 'img/히어로_3.webp', 'img/히어로_4.webp'];
-    var SRC_W = 1600, SRC_H = 1655;
-    var FOOD_START = 550, FIRST_SWAP = 2450, FOOD_INTERVAL = 2600, FRAME_MS = 70;
-    var LEVELS = [1, 1/6, 1/12, 1/24, 1/48];
+    var FOOD_SRCS = ['img/히어로_1.webp', 'img/히어로_2.webp', 'img/히어로_3.webp', 'img/히어로_4.webp']; // 순환할 음식 이미지
+    var SRC_W = 1600, SRC_H = 1655; // 원본 이미지 크기
+    var FOOD_START = 550;      // 첫 음식 등장 시점(ms)
+    var FIRST_SWAP = 2450;     // 첫 음식 교체 시점(ms) = 날짜 완료 1850 + 550
+    var FOOD_INTERVAL = 2600;  // 이후 음식 교체 간격(ms)
+    var FRAME_MS = 70;         // 픽셀 단계 한 장당 시간(ms)
+    var FIRST_FRAME_MS = 85;  // 첫 음식 등장 때만 한 장당 시간(ms) — 클수록 느림
+    var LEVELS = [1, 1/6, 1/12, 1/24, 1/48]; // 1 = 선명, 작을수록 큰 모자이크
 
     var small = document.createElement('canvas');
     var sctx = small.getContext('2d');
@@ -1034,6 +1043,7 @@ if(location.protocol==='file:'||location.hostname.indexOf('github.io')>-1){
     var reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     var index = -1, busy = false, cycleTimer = null, foods = [];
 
+    // 첫 음식만 높은 우선순위로 불러옴
     function loadFood(src, i) {
       var im = new Image();
       try { im.fetchPriority = i === 0 ? 'high' : 'low'; } catch (e) {}
@@ -1044,6 +1054,7 @@ if(location.protocol==='file:'||location.hostname.indexOf('github.io')>-1){
     }
     for (li = 0; li < FOOD_SRCS.length; li++) foods.push(loadFood(FOOD_SRCS[li], li));
 
+    // 캔버스 해상도를 표시 크기 × 기기 픽셀 비율에 맞춤
     function fitCanvas() {
       var dpr = Math.min(window.devicePixelRatio || 1, 3);
       var w = Math.min(SRC_W, Math.max(1, Math.round(stage.clientWidth * dpr)));
@@ -1053,6 +1064,7 @@ if(location.protocol==='file:'||location.hostname.indexOf('github.io')>-1){
       if (index >= 0 && !busy) draw(foods[index], 1);
     }
 
+    // 지정한 단계(level)의 모자이크로 그림
     function draw(img, level) {
       ctx.clearRect(0, 0, W, H);
       if (!img || !img.naturalWidth) return;
@@ -1069,21 +1081,24 @@ if(location.protocol==='file:'||location.hostname.indexOf('github.io')>-1){
       ctx.drawImage(small, 0, 0, w, h, 0, 0, W, H);
     }
 
+    // 현재 음식이 뭉개졌다가 다음 음식이 선명하게 풀림
     function goTo(nx) {
       if (busy) return;
       var from = foods[index], to = foods[nx], frames = [], i;
       if (reduced) { index = nx; draw(to, 1); return; }
       if (from) for (i = 1; i < LEVELS.length; i++) frames.push([from, LEVELS[i]]);
       for (i = LEVELS.length - 1; i >= 0; i--) frames.push([to, LEVELS[i]]);
+      var ms = from ? FRAME_MS : FIRST_FRAME_MS;
       busy = true; index = nx;
       (function step(n) {
         draw(frames[n][0], frames[n][1]);
-        if (n + 1 < frames.length) setTimeout(function () { step(n + 1); }, FRAME_MS);
+        if (n + 1 < frames.length) setTimeout(function () { step(n + 1); }, ms);
         else busy = false;
       })(0);
     }
     function next() { goTo((index + 1) % foods.length); }
     function startCycle() { clearInterval(cycleTimer); cycleTimer = setInterval(next, FOOD_INTERVAL); }
+    // 텍스트 등장 시작 + 음식 순환 시작
     function play() {
       fitCanvas();
       intro.classList.add('is-playing');
@@ -1096,12 +1111,14 @@ if(location.protocol==='file:'||location.hostname.indexOf('github.io')>-1){
     var frt;
     window.addEventListener('resize', function () { clearTimeout(frt); frt = setTimeout(fitCanvas, 150); });
 
+    // 클릭/탭하면 바로 다음 음식으로
     stage.addEventListener('click', function () {
       if (index < 0 || busy) return;
       next();
       if (!reduced) startCycle();
     });
 
+    // 화면에 30% 들어오면 재생(1회)
     if ('IntersectionObserver' in window) {
       var iio = new IntersectionObserver(function (entries) {
         if (entries[0].isIntersecting) { play(); iio.disconnect(); }
